@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Coding Cost Visualizer</title>
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 20px; }
+  textarea { width: 100%; height: 140px; font-family: inherit; font-size: 14px; }
+  #out { margin-top: 12px; line-height: 1.8; word-wrap: break-word; white-space: pre-wrap; }
+  .char { padding: 2px 1px; border-radius: 2px; color: #000; }
+  .legend { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+  button { padding: 8px 12px; }
+</style>
+</head>
+<body>
+<textarea id="txt" placeholder="Type text here…">This is a test string. This is a test string.</textarea>
+<div style="margin-top:8px;">
+  <button id="run">Compute</button>
+</div>
+<div id="out"></div>
+
+<script type="module">
+  import ModuleFactory from './viz.js';
+  const Module = await ModuleFactory();
+
+  const compute = Module.cwrap('compute_coding_costs', 'number', ['number','number','number']);
+
+  const txt = document.getElementById('txt');
+  const out = document.getElementById('out');
+
+  function colorFor(cost) {
+    const col = (cost <= 0 ? 0x80ff80 :
+             cost <= 0.5 ? 0x00ff00 :
+             cost <= 1 ? 0x00c000 :
+             cost <= 2 ? 0x008040 :
+             cost <= 3 ? 0x006090 :
+             cost <= 5 ? 0x0020f0 :
+             cost <= 7 ? 0x0000a0 :
+             cost <= 9 ? 0x000000 :
+             cost <= 12 ? 0x900000 : 0xff0000);
+    console.log(cost, col.toString(16).padStart(6,'0'));
+    return `#${col.toString(16).padStart(6,'0')}`;
+  }
+
+  function toUTF8(str) {
+    const len = Module.lengthBytesUTF8(str) + 1;
+    const ptr = Module._malloc(len);
+    Module.stringToUTF8(str, ptr, len);
+    return { ptr, len };
+  }
+
+  function runOnce() {
+    const s = txt.value || '';
+
+    const { ptr: sPtr } = toUTF8(s);
+    const n = s.length;
+    const f32Bytes = n * 4;
+    const outPtr = Module._malloc(f32Bytes);
+    Module.HEAPU8.fill(0, outPtr, outPtr + f32Bytes);
+    compute(sPtr, outPtr, n);
+    const view = new Float32Array(Module.HEAPF32.buffer, outPtr, n);
+    console.log(view);
+    out.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const span = document.createElement('span');
+      span.className = 'char';
+      const ch = s[i] ?? '';
+      const c = view[i] ?? 0;
+      span.style.backgroundColor = colorFor(c);
+      span.style.color = '#fff';
+      span.title = `${c.toFixed(4)} bits @ index ${i}`;
+      span.textContent = ch || ' ';
+      out.appendChild(span);
+    }
+    Module._free(sPtr);
+    Module._free(outPtr);
+  }
+
+  document.getElementById('run').addEventListener('click', runOnce);
+  runOnce();
+</script>
+</body>
+</html>
