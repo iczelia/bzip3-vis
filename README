@@ -2,7 +2,7 @@
 
 Simple bzip3 compression ratio visualisation web UI.
 
-https://iczelia.net/doc/bzip3-vis
+https://iczelia.net/doc/bz3-vis/
 
 It's rather difficult to provide meaningful visualisations for the bzip3 algorithm as it mixes LZ-style string matching and BWT followed by arithmetic coding.
 This results in seemingly random increases or decreases in compression ratio across the file. A more sophisticated version of the same tool would also
