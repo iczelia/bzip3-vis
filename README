@@ -1,0 +1,20 @@
+# bzip3-vis
+
+Simple bzip3 compression ratio visualisation web UI.
+
+It's rather difficult to provide meaningful visualisations for the bzip3 algorithm as it mixes LZ-style string matching and BWT followed by arithmetic coding.
+This results in seemingly random increases or decreases in compression ratio across the file. A more sophisticated version of the same tool would also
+display the pre-coding neighbourhood.
+
+## building
+
+```
+% emcc \
+    libbz3.c \
+    -O3 -s ALLOW_MEMORY_GROWTH=1 -s ENVIRONMENT=web \
+    -s MODULARIZE=1 -s EXPORT_ES6=1 \
+    -s EXPORTED_FUNCTIONS='["_compute_coding_costs","_malloc","_free"]' \
+    -s EXPORTED_RUNTIME_METHODS='["cwrap","lengthBytesUTF8","stringToUTF8","HEAPF32"]' \
+    -o viz.js
+% python3 -m http.server
+```
